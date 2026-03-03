@@ -1,14 +1,11 @@
 package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.Transaction;
-import org.springframework.stereotype.Repository;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-@Repository
-public class TransactionsRepositoryImpl implements TransactionsRepository {
+public class InMemoryTransactionsRepository implements TransactionsRepository {
     @Override
     public Transaction findById(long id) {
         return null;
@@ -21,7 +18,7 @@ public class TransactionsRepositoryImpl implements TransactionsRepository {
 
     @Override
     public List<Long> findByType(String type) {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Override
