@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TransactionsController.class)
@@ -36,8 +38,26 @@ public class TransactionsControllerTest {
 
     @Test
     public void shouldCreateTransaction() throws Exception {
-        mockMvc.perform(post("/transactions/4")).andExpect(status().isCreated());
-        // return should be the transaction
+        String jsonBody = """
+                {
+                    "amount": 4000,
+                    "type": "insurance",
+                    "parent_id": 1
+                }""";
+
+        String jsonResponse = """
+                {
+                    "id": 4,
+                    "amount": 4000,
+                    "type": "insurance",
+                    "parent_id": 1
+                }""";
+        mockMvc.perform(post("/transactions/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(content().json(jsonResponse));
     }
 
     @Test
@@ -57,36 +77,64 @@ public class TransactionsControllerTest {
 
     @Test
     public void shouldFailCreateTransactionWhenBodyIsInvalid() throws Exception {
-        mockMvc.perform(post("/transactions/4")).andExpect(status().isBadRequest());
+        String jsonBody = """
+                {
+                    "type": "insurance",
+                    "parent_id": 1
+                }""";
+        mockMvc.perform(post("/transactions/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody)
+                )
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     public void shouldRetrieveTransactionsListForTypeCar() throws Exception {
-        mockMvc.perform(get("/transactions/type/car")).andExpect(status().isOk());
-        // response should be [1]
+        String jsonResponse = """
+                [
+                    1
+                ]""";
+
+        mockMvc.perform(get("/transactions/type/car"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
     }
 
     @Test
     public void shouldRetrieveTransactionsListForTypeShopping() throws Exception {
-        mockMvc.perform(get("/transactions/type/shopping")).andExpect(status().isOk());
-        // response should be [2, 3]
+        String jsonResponse = """
+                [
+                    2,
+                    3
+                ]""";
+
+        mockMvc.perform(get("/transactions/type/shopping"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
     }
 
     @Test
     public void shouldRetrieveEmptyTransactionsListForTypeInsurance() throws Exception {
-        mockMvc.perform(get("/transactions/type/insurance")).andExpect(status().isOk());
-        // response should be []
+        String jsonResponse = "[]";
+        mockMvc.perform(get("/transactions/type/insurance"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
     }
 
     @Test
     public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor1() throws Exception {
-        mockMvc.perform(get("/transactions/sum/1")).andExpect(status().isOk());
-        // response to be 20000
+        String jsonResponse = "{sum: 20000}";
+        mockMvc.perform(get("/transactions/sum/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
     }
 
     @Test
     public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor2() throws Exception {
-        mockMvc.perform(get("/transactions/sum/2")).andExpect(status().isOk());
-        // response to be 15000
+        String jsonResponse = "{sum: 15000}";
+        mockMvc.perform(get("/transactions/sum/2"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
     }
 }
