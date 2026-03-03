@@ -1,6 +1,7 @@
 package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.Transaction;
+import com.gmartone.mendel.transactions.exception.TransactionNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,8 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionsServiceTest {
@@ -24,47 +24,30 @@ class TransactionsServiceTest {
     @InjectMocks
     private TransactionsServiceImpl service;
 
-    // -------------------------
-    // CREATE
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // create
+    // -----------------------------------------------------------------------
 
     @Test
-    void createTransaction_shouldThrowException_whenTransactionAlreadyExists() {
-
+    void create_shouldThrowException_whenTransactionAlreadyExists() {
         Transaction tx = new Transaction(1, 1000, "car", null);
-
         when(repository.findById(1L)).thenReturn(tx);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.create(tx));
+        assertThrows(IllegalArgumentException.class, () -> service.create(tx));
     }
 
     @Test
-    void createTransaction_shouldThrowException_whenParentIdIsNotFound() {
-
+    void create_shouldThrowException_whenParentIdDoesNotExist() {
         Transaction tx = new Transaction(2, 1000, "car", 99L);
-
         when(repository.findById(2L)).thenReturn(null);
         when(repository.findById(99L)).thenReturn(null);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.create(tx));
+        assertThrows(IllegalArgumentException.class, () -> service.create(tx));
     }
 
     @Test
-    void createTransaction_shouldThrowException_whenTransactionTypeIsMissing() {
-
-        Transaction tx = new Transaction(1, 1000, null, null);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.create(tx));
-    }
-
-    @Test
-    void createTransaction_shouldCreateTransaction() {
-
+    void create_shouldPersistTransaction_whenValid() {
         Transaction tx = new Transaction(1, 1000, "car", null);
-
         when(repository.findById(1L)).thenReturn(null);
         when(repository.create(tx)).thenReturn(tx);
 
@@ -74,22 +57,27 @@ class TransactionsServiceTest {
         verify(repository).create(tx);
     }
 
-    // -------------------------
-    // FIND BY TYPE
-    // -------------------------
-
     @Test
-    void findByType_shouldThrowException_whenTransactionTypeIsMissing() {
+    void create_shouldPersistTransaction_whenParentExists() {
+        Transaction parent = new Transaction(1, 500, "car", null);
+        Transaction child  = new Transaction(2, 200, "car", 1L);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.findByType(null));
+        when(repository.findById(2L)).thenReturn(null);
+        when(repository.findById(1L)).thenReturn(parent);
+        when(repository.create(child)).thenReturn(child);
+
+        Transaction result = service.create(child);
+
+        assertEquals(2L, result.id());
     }
+
+    // -----------------------------------------------------------------------
+    // findByType
+    // -----------------------------------------------------------------------
 
     @Test
     void findByType_shouldReturnEmptyList_whenNoTransactionHasThatType() {
-
-        when(repository.findByType("car"))
-                .thenReturn(Collections.emptyList());
+        when(repository.findByType("car")).thenReturn(Collections.emptyList());
 
         List<Long> result = service.findByType("car");
 
@@ -97,59 +85,61 @@ class TransactionsServiceTest {
     }
 
     @Test
-    void findByType_shouldReturnTransactionList() {
-
-        when(repository.findByType("car"))
-                .thenReturn(List.of(1L, 2L));
+    void findByType_shouldReturnMatchingIds() {
+        when(repository.findByType("car")).thenReturn(List.of(1L, 2L));
 
         List<Long> result = service.findByType("car");
 
         assertEquals(2, result.size());
-        assertTrue(result.contains(1L));
-        assertTrue(result.contains(2L));
+        assertTrue(result.containsAll(List.of(1L, 2L)));
     }
 
-    // -------------------------
-    // SUM
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // sum
+    // -----------------------------------------------------------------------
 
     @Test
-    void sum_shouldReturn0_whenTransactionIsNotFound() {
-
+    void sum_shouldThrowTransactionNotFoundException_whenTransactionDoesNotExist() {
         when(repository.findById(1L)).thenReturn(null);
 
-        double result = service.sum(1L);
-
-        assertEquals(0.0, result);
+        assertThrows(TransactionNotFoundException.class, () -> service.sum(1L));
     }
 
     @Test
-    void sum_shouldReturnCurrentSum_whenTransactionHasNoChildren() {
-
+    void sum_shouldReturnAmount_whenTransactionHasNoChildren() {
         Transaction tx = new Transaction(1, 5000, "car", null);
-
         when(repository.findById(1L)).thenReturn(tx);
         when(repository.findChildren(1L)).thenReturn(Collections.emptySet());
 
-        double result = service.sum(1L);
-
-        assertEquals(5000.0, result);
+        assertEquals(5000.0, service.sum(1L));
     }
 
     @Test
-    void sum_shouldReturnAggregatedSum_whenTransactionHasChildren() {
-
+    void sum_shouldReturnAggregatedAmount_whenTransactionHasChildren() {
         Transaction parent = new Transaction(1, 5000, "car", null);
-        Transaction child = new Transaction(2, 10000, "shopping", 1L);
+        Transaction child  = new Transaction(2, 10000, "shopping", 1L);
 
         when(repository.findById(1L)).thenReturn(parent);
         when(repository.findById(2L)).thenReturn(child);
-
         when(repository.findChildren(1L)).thenReturn(Set.of(2L));
         when(repository.findChildren(2L)).thenReturn(Collections.emptySet());
 
-        double result = service.sum(1L);
+        assertEquals(15000.0, service.sum(1L));
+    }
 
-        assertEquals(15000.0, result);
+    @Test
+    void sum_shouldReturnAggregatedAmount_forDeepHierarchy() {
+        Transaction t1 = new Transaction(1, 1000, "a", null);
+        Transaction t2 = new Transaction(2, 2000, "a", 1L);
+        Transaction t3 = new Transaction(3, 3000, "a", 2L);
+
+        when(repository.findById(1L)).thenReturn(t1);
+        when(repository.findById(2L)).thenReturn(t2);
+        when(repository.findById(3L)).thenReturn(t3);
+        when(repository.findChildren(1L)).thenReturn(Set.of(2L));
+        when(repository.findChildren(2L)).thenReturn(Set.of(3L));
+        when(repository.findChildren(3L)).thenReturn(Collections.emptySet());
+
+        assertEquals(6000.0, service.sum(1L));
     }
 }

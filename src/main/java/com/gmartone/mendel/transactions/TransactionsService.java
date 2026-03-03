@@ -1,30 +1,35 @@
 package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.Transaction;
+import com.gmartone.mendel.transactions.exception.TransactionNotFoundException;
 
 import java.util.List;
 
 public interface TransactionsService {
 
     /**
-     * Creates a transaction
+     * Creates a transaction.
      *
-     * @param transaction The transaction to be created
-     * @return The created transaction
+     * @param transaction the transaction to persist
+     * @return the persisted transaction
+     * @throws IllegalArgumentException if the id already exists or the parent_id is not found
      */
     Transaction create(Transaction transaction);
 
     /**
-     * Retrieves the list of ids related to a transaction type
-     * @param type the transaction type
-     * @return a list of ids from transactions containing said type
+     * Returns all transaction ids that share the given type.
+     *
+     * @param type the type to filter on
+     * @return list of matching ids (may be empty, never null)
      */
     List<Long> findByType(String type);
 
     /**
-     * Retrieves the total sum of money related to a transaction
-     * @param id the transactions id
-     * @return the total sum of money related to the transaction (the transaction with the id and its children)
+     * Returns the total amount for the given transaction and all its transitive descendants.
+     *
+     * @param id the root transaction id
+     * @return recursive sum
+     * @throws TransactionNotFoundException if no transaction exists with the given id
      */
     double sum(long id);
 }
