@@ -2,8 +2,12 @@ package com.gmartone.mendel.transactions.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Create transaction response")
+@Schema(description = "Transaction creation result")
 public record CreateTransactionResponse(
-        @Schema(description = "Status of the creation, (ok)")
+
+        @Schema(
+                description = "Creation status",
+                example = "ok"
+        )
         String status
 ) {}

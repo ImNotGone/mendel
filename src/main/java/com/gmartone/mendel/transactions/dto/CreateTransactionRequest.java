@@ -2,14 +2,27 @@ package com.gmartone.mendel.transactions.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema( description = "A transactions create request body")
+@Schema(description = "Transaction creation request payload")
 public record CreateTransactionRequest(
-        @Schema(description = "The amount spent in the transaction")
+
+        @Schema(
+                description = "Amount of the transaction",
+                example = "4000",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         double amount,
 
-        @Schema(description = "The transactions type")
+        @Schema(
+                description = "Transaction type (used for grouping)",
+                example = "shopping",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         String type,
 
-        @Schema(description = "The transactions parent transaction id")
+        @Schema(
+                description = "Optional parent transaction id",
+                example = "1",
+                nullable = true
+        )
         Long parent_id
 ) { }
