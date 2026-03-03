@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Tag(name = "Transactions", description = "Endpoints create and retrieve transactions")
@@ -46,5 +47,13 @@ public class TransactionsController {
     @GetMapping("/type/{type}")
     public ResponseEntity<List<Long>> findByType(@PathVariable String type) {
         return ResponseEntity.ok(transactionService.findByType(type));
+    }
+
+    @GetMapping("/sum/{id:\\d+}")
+    public ResponseEntity<Map<String, Double>> sum(@PathVariable long id) {
+
+        double total = transactionService.sum(id);
+
+        return ResponseEntity.ok(Map.of("sum", total));
     }
 }

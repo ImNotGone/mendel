@@ -160,6 +160,7 @@ public class TransactionsControllerTest {
                   sum: 20000
                 }
                 """;
+        when(transactionService.sum(1)).thenReturn(20000.0);
         mockMvc.perform(get("/transactions/sum/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
@@ -167,7 +168,12 @@ public class TransactionsControllerTest {
 
     @Test
     public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor2() throws Exception {
-        String jsonResponse = "{sum: 15000}";
+        String jsonResponse = """
+                {
+                    sum: 15000
+                }
+                """;
+        when(transactionService.sum(2)).thenReturn(15000.0);
         mockMvc.perform(get("/transactions/sum/2"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));

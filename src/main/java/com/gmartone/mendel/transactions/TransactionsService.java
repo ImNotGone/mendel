@@ -20,4 +20,11 @@ public interface TransactionsService {
      * @return a list of ids from transactions containing said type
      */
     List<Long> findByType(String type);
+
+    /**
+     * Retrieves the total sum of money related to a transaction
+     * @param id the transactions id
+     * @return the total sum of money related to the transaction (the transaction with the id and its children)
+     */
+    double sum(long id);
 }

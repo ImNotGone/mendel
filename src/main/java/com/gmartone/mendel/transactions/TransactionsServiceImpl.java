@@ -34,4 +34,25 @@ public class TransactionsServiceImpl implements TransactionsService {
     public List<Long> findByType(String type) {
         return new ArrayList<>(repository.findByType(type));
     }
+
+    @Override
+    public double sum(long id) {
+        return sumRecursive(id);
+    }
+
+    private double sumRecursive(long id) {
+
+        Transaction transaction = repository.findById(id);
+        if (transaction == null) {
+            throw new IllegalArgumentException("Transaction not found");
+        }
+
+        double total = transaction.amount();
+
+        for (Long childId : repository.findChildren(id)) {
+            total += sumRecursive(childId);
+        }
+
+        return total;
+    }
 }
