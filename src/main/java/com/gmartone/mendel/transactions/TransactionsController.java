@@ -55,12 +55,37 @@ public class TransactionsController {
     })
     @PutMapping("/{id:\\d+}")
     public ResponseEntity<CreateTransactionResponse> createTransaction(
-            @Parameter(description = "Transaction id", example = "4", required = true)
+            @Parameter(description = "Transaction id", example = "1", required = true)
             @PathVariable long id,
 
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Transaction creation payload",
-                    required = true
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateTransactionRequest.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Without parent",
+                                            value = """
+                                                    {
+                                                      "amount": 4000,
+                                                      "type": "shopping"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "With parent",
+                                            value = """
+                                                    {
+                                                      "amount": 5000,
+                                                      "type": "shopping",
+                                                      "parent_id": 10
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
             )
             @Valid @RequestBody CreateTransactionRequest request
     ) {
