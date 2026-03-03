@@ -44,7 +44,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
         Transaction transaction = repository.findById(id);
         if (transaction == null) {
-            throw new IllegalArgumentException("Transaction not found");
+            return 0.0;
         }
 
         double total = transaction.amount();
