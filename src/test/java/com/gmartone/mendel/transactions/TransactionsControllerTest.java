@@ -125,6 +125,8 @@ public class TransactionsControllerTest {
                     1
                 ]""";
 
+        List<Long> expectedIds = List.of(1L);
+        when(transactionService.findByType("car")).thenReturn(expectedIds);
         mockMvc.perform(get("/transactions/type/car"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
@@ -137,6 +139,9 @@ public class TransactionsControllerTest {
                     2,
                     3
                 ]""";
+
+        List<Long> expectedIds = List.of(2L, 3L);
+        when(transactionService.findByType("shopping")).thenReturn(expectedIds);
 
         mockMvc.perform(get("/transactions/type/shopping"))
                 .andExpect(status().isOk())

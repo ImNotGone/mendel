@@ -3,30 +3,35 @@ package com.gmartone.mendel.transactions;
 import com.gmartone.mendel.transactions.dto.Transaction;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class TransactionsServiceImpl implements TransactionsService {
 
-    private final TransactionsRepository transactionRepository;
+    private final TransactionsRepository repository;
 
-    public TransactionsServiceImpl(TransactionsRepository transactionRepository) {
-        this.transactionRepository = transactionRepository;
+    public TransactionsServiceImpl(TransactionsRepository repository) {
+        this.repository = repository;
     }
 
     @Override
     public Transaction create(Transaction transaction) {
 
-        // Check if ID already exists
-        if (transactionRepository.findById(transaction.id()) != null) {
-            throw new IllegalArgumentException("Transaction ID already exists");
+        if (repository.findById(transaction.id()) != null) {
+            throw new IllegalArgumentException("ID already exists");
         }
 
-        // Optionally validate parent exists
-        if (transaction.parent_id() != null) {
-            if (transactionRepository.findById(transaction.parent_id()) == null) {
-                throw new IllegalArgumentException("Parent transaction not found");
-            }
+        if (transaction.parent_id() != null &&
+                repository.findById(transaction.parent_id()) == null) {
+            throw new IllegalArgumentException("Parent not found");
         }
 
-        return transactionRepository.create(transaction);
+        return repository.create(transaction);
+    }
+
+    @Override
+    public List<Long> findByType(String type) {
+        return new ArrayList<>(repository.findByType(type));
     }
 }

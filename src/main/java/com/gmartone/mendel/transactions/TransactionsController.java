@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @Tag(name = "Transactions", description = "Endpoints create and retrieve transactions")
 @RequestMapping("/transactions")
@@ -38,5 +40,10 @@ public class TransactionsController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @GetMapping("/type/{type}")
+    public ResponseEntity<List<Long>> findByType(@PathVariable String type) {
+        return ResponseEntity.ok(transactionService.findByType(type));
     }
 }
