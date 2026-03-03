@@ -2,6 +2,8 @@ package com.gmartone.mendel.transactions.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.math.BigDecimal;
+
 @Schema(description = "Transaction snapshot representation")
 public record Transaction(
 
@@ -15,7 +17,7 @@ public record Transaction(
                 description = "Amount of the transaction",
                 example = "4000"
         )
-        double amount,
+        BigDecimal amount,
 
         @Schema(
                 description = "Transaction type",

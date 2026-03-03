@@ -46,7 +46,10 @@ public class TransactionsController {
                     description = "Invalid request body, id already in use, or parent not found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    { "message": "Transaction id already exists: 10" }
+                                    """)
                     )
             )
     })
@@ -103,13 +106,19 @@ public class TransactionsController {
             description = "Returns the sum of a transaction's amount plus all its transitive children"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Sum calculated successfully"),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Sum calculated successfully"
+            ),
             @ApiResponse(
                     responseCode = "404",
                     description = "Transaction not found",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    { "message": "Transaction not found: 99" }
+                                    """)
                     )
             )
     })
@@ -118,7 +127,6 @@ public class TransactionsController {
             @Parameter(description = "Transaction id", example = "1", required = true)
             @PathVariable long id
     ) {
-        double total = transactionService.sum(id);
-        return ResponseEntity.ok(new SumResponse(total));
+        return ResponseEntity.ok(new SumResponse(transactionService.sum(id)));
     }
 }

@@ -4,6 +4,7 @@ import com.gmartone.mendel.transactions.dto.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -18,39 +19,33 @@ class InMemoryTransactionsRepositoryTest {
         repository = new InMemoryTransactionsRepository();
     }
 
-    // -------------------------
-    // CREATE + FIND BY ID
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // create + findById
+    // -----------------------------------------------------------------------
 
     @Test
     void create_shouldStoreTransaction() {
-
-        Transaction tx = new Transaction(1L, 5000, "car", null);
-
+        Transaction tx = new Transaction(1L, new BigDecimal("5000"), "car", null);
         repository.create(tx);
 
         Transaction found = repository.findById(1L);
 
         assertNotNull(found);
-        assertEquals(5000, found.amount());
+        assertEquals(new BigDecimal("5000"), found.amount());
         assertEquals("car", found.type());
     }
 
     @Test
     void findById_shouldReturnNull_whenTransactionDoesNotExist() {
-
-        Transaction found = repository.findById(999L);
-
-        assertNull(found);
+        assertNull(repository.findById(999L));
     }
 
-    // -------------------------
-    // FIND BY TYPE
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // findByType
+    // -----------------------------------------------------------------------
 
     @Test
-    void findByType_shouldReturnEmptySet_whenNoTransactionsWithType() {
-
+    void findByType_shouldReturnEmptyList_whenNoTransactionsWithType() {
         List<Long> result = repository.findByType("shopping");
 
         assertNotNull(result);
@@ -59,26 +54,23 @@ class InMemoryTransactionsRepositoryTest {
 
     @Test
     void findByType_shouldReturnIdsForGivenType() {
-
-        repository.create(new Transaction(1L, 5000, "car", null));
-        repository.create(new Transaction(2L, 6000, "car", null));
-        repository.create(new Transaction(3L, 7000, "shopping", null));
+        repository.create(new Transaction(1L, new BigDecimal("5000"), "car", null));
+        repository.create(new Transaction(2L, new BigDecimal("6000"), "car", null));
+        repository.create(new Transaction(3L, new BigDecimal("7000"), "shopping", null));
 
         List<Long> result = repository.findByType("car");
 
         assertEquals(2, result.size());
-        assertTrue(result.contains(1L));
-        assertTrue(result.contains(2L));
+        assertTrue(result.containsAll(List.of(1L, 2L)));
     }
 
-    // -------------------------
-    // CHILDREN INDEX
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // findChildren
+    // -----------------------------------------------------------------------
 
     @Test
     void findChildren_shouldReturnEmptySet_whenNoChildren() {
-
-        repository.create(new Transaction(1L, 5000, "car", null));
+        repository.create(new Transaction(1L, new BigDecimal("5000"), "car", null));
 
         Set<Long> children = repository.findChildren(1L);
 
@@ -88,27 +80,24 @@ class InMemoryTransactionsRepositoryTest {
 
     @Test
     void findChildren_shouldReturnChildIds() {
-
-        repository.create(new Transaction(1L, 5000, "car", null));
-        repository.create(new Transaction(2L, 3000, "shopping", 1L));
-        repository.create(new Transaction(3L, 2000, "shopping", 1L));
+        repository.create(new Transaction(1L, new BigDecimal("5000"), "car", null));
+        repository.create(new Transaction(2L, new BigDecimal("3000"), "shopping", 1L));
+        repository.create(new Transaction(3L, new BigDecimal("2000"), "shopping", 1L));
 
         Set<Long> children = repository.findChildren(1L);
 
         assertEquals(2, children.size());
-        assertTrue(children.contains(2L));
-        assertTrue(children.contains(3L));
+        assertTrue(children.containsAll(Set.of(2L, 3L)));
     }
 
-    // -------------------------
-    // DATA INTEGRITY
-    // -------------------------
+    // -----------------------------------------------------------------------
+    // index integrity
+    // -----------------------------------------------------------------------
 
     @Test
     void create_shouldIndexByTypeAndParentCorrectly() {
-
-        repository.create(new Transaction(1L, 5000, "car", null));
-        repository.create(new Transaction(2L, 3000, "shopping", 1L));
+        repository.create(new Transaction(1L, new BigDecimal("5000"), "car", null));
+        repository.create(new Transaction(2L, new BigDecimal("3000"), "shopping", 1L));
 
         assertEquals(1, repository.findByType("car").size());
         assertEquals(1, repository.findChildren(1L).size());

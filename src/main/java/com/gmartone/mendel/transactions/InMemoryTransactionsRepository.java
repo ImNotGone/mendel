@@ -16,9 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@code childrenByParent} – maps each parent id to the set of its direct children.</li>
  * </ul>
  *
- * <p>All maps use {@link ConcurrentHashMap} so that concurrent HTTP requests do not
- * corrupt shared state. The compound read-then-write in {@link #create} is
- * coordinated via {@code synchronized} to guarantee atomicity.
+ * <p>All maps use {@link ConcurrentHashMap} to allow safe concurrent reads.
+ * The duplicate-id invariant and the write-ordering guarantee are enforced by
+ * {@link TransactionsServiceImpl#create}, which holds a monitor lock for the
+ * full check-then-act sequence before delegating here.
  */
 @Repository
 public class InMemoryTransactionsRepository implements TransactionsRepository {
@@ -32,16 +33,8 @@ public class InMemoryTransactionsRepository implements TransactionsRepository {
         return byId.get(id);
     }
 
-    /**
-     * Atomically persists a transaction and updates all secondary indexes.
-     *
-     * <p>The method is {@code synchronized} so that the check-then-act sequence
-     * performed by the service layer (findById → create) remains consistent even
-     * under concurrent load. A finer-grained lock per id would also work but
-     * adds complexity without measurable benefit for this use-case.
-     */
     @Override
-    public synchronized Transaction create(Transaction transaction) {
+    public Transaction create(Transaction transaction) {
         byId.put(transaction.id(), transaction);
 
         byType

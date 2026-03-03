@@ -3,6 +3,7 @@ package com.gmartone.mendel.transactions;
 import com.gmartone.mendel.transactions.dto.Transaction;
 import com.gmartone.mendel.transactions.exception.TransactionNotFoundException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface TransactionsService {
@@ -28,8 +29,8 @@ public interface TransactionsService {
      * Returns the total amount for the given transaction and all its transitive descendants.
      *
      * @param id the root transaction id
-     * @return recursive sum
+     * @return recursive sum as {@link BigDecimal} for precision
      * @throws TransactionNotFoundException if no transaction exists with the given id
      */
-    double sum(long id);
+    BigDecimal sum(long id);
 }

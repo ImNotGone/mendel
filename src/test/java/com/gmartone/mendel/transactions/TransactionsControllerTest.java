@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,9 +38,9 @@ public class TransactionsControllerTest {
     @BeforeEach
     public void setup() {
         transactions = List.of(
-                new Transaction(1, 5000, "car", null),
-                new Transaction(2, 10000, "shopping", 1L),
-                new Transaction(3, 5000, "shopping", 2L)
+                new Transaction(1, new BigDecimal("5000"), "car", null),
+                new Transaction(2, new BigDecimal("10000"), "shopping", 1L),
+                new Transaction(3, new BigDecimal("5000"), "shopping", 2L)
         );
     }
 
@@ -49,7 +50,7 @@ public class TransactionsControllerTest {
 
     @Test
     public void create_shouldReturn201AndOkBody_whenTransactionIsValid() throws Exception {
-        Transaction expected = new Transaction(4, 4000, "insurance", 1L);
+        Transaction expected = new Transaction(4, new BigDecimal("4000"), "insurance", 1L);
         when(transactionService.create(any(Transaction.class))).thenReturn(expected);
 
         mockMvc.perform(put("/transactions/4")
@@ -89,12 +90,23 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void create_shouldReturn400_whenAmountIsMissing() throws Exception {
-        // amount defaults to 0.0 when omitted, which violates @Positive
+    public void create_shouldReturn400_whenAmountIsAbsent() throws Exception {
         mockMvc.perform(put("/transactions/4")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 { "type": "insurance" }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    public void create_shouldReturn400_whenAmountIsZero() throws Exception {
+        mockMvc.perform(put("/transactions/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 0, "type": "insurance" }
                                 """))
                 .andExpect(status().isBadRequest());
 
@@ -162,7 +174,7 @@ public class TransactionsControllerTest {
 
     @Test
     public void sum_shouldReturnAggregatedSum_whenIdIs1() throws Exception {
-        when(transactionService.sum(1)).thenReturn(20000.0);
+        when(transactionService.sum(1)).thenReturn(new BigDecimal("20000"));
 
         mockMvc.perform(get("/transactions/sum/1"))
                 .andExpect(status().isOk())
@@ -177,6 +189,6 @@ public class TransactionsControllerTest {
 
         mockMvc.perform(get("/transactions/sum/99"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").isNotEmpty());
+                .andExpect(jsonPath("$.message").value("Transaction not found: 99"));
     }
 }
