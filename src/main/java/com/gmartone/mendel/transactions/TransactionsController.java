@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,11 +40,10 @@ public class TransactionsController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = CreateTransactionResponse.class)
                     )
-
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid request or id already in use",
+                    description = "Invalid request body, id already in use, or parent not found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -51,7 +51,7 @@ public class TransactionsController {
             )
     })
     @PutMapping("/{id:\\d+}")
-    public ResponseEntity<?> createTransaction(
+    public ResponseEntity<CreateTransactionResponse> createTransaction(
             @Parameter(description = "Transaction id", example = "4", required = true)
             @PathVariable long id,
 
@@ -59,9 +59,8 @@ public class TransactionsController {
                     description = "Transaction creation payload",
                     required = true
             )
-            @RequestBody CreateTransactionRequest request
+            @Valid @RequestBody CreateTransactionRequest request
     ) {
-
         Transaction transaction = new Transaction(
                 id,
                 request.amount(),
@@ -69,17 +68,11 @@ public class TransactionsController {
                 request.parent_id()
         );
 
-        try {
-            transactionService.create(transaction);
+        transactionService.create(transaction);
 
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new CreateTransactionResponse("ok"));
-
-        } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new ErrorResponse(e.getMessage()));
-        }
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new CreateTransactionResponse("ok"));
     }
 
     @Operation(
@@ -89,18 +82,11 @@ public class TransactionsController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Transactions retrieved successfully",
+                    description = "Transactions retrieved successfully (empty list if none match)",
                     content = @Content(
                             mediaType = "application/json",
-                            array = @ArraySchema(
-                                    schema = @Schema(
-                                            type = "integer",
-                                            example = "1"
-                                    )
-                            ),
-                            examples = @ExampleObject(
-                                    value = "[1, 2]"
-                            )
+                            array = @ArraySchema(schema = @Schema(type = "integer", example = "1")),
+                            examples = @ExampleObject(value = "[1, 2]")
                     )
             )
     })
@@ -114,19 +100,25 @@ public class TransactionsController {
 
     @Operation(
             summary = "Calculate aggregated transaction sum",
-            description = "Returns the sum of a transaction amount including all its children recursively"
+            description = "Returns the sum of a transaction's amount plus all its transitive children"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Sum calculated successfully")
+            @ApiResponse(responseCode = "200", description = "Sum calculated successfully"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Transaction not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
     })
     @GetMapping("/sum/{id:\\d+}")
     public ResponseEntity<SumResponse> sum(
             @Parameter(description = "Transaction id", example = "1", required = true)
             @PathVariable long id
     ) {
-
         double total = transactionService.sum(id);
-
         return ResponseEntity.ok(new SumResponse(total));
     }
 }

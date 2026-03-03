@@ -1,27 +1,29 @@
 package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.Transaction;
+import com.gmartone.mendel.transactions.exception.GlobalExceptionHandler;
+import com.gmartone.mendel.transactions.exception.TransactionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TransactionsController.class)
 @AutoConfigureMockMvc
+@Import(GlobalExceptionHandler.class)
 public class TransactionsControllerTest {
 
     @Autowired
@@ -41,154 +43,140 @@ public class TransactionsControllerTest {
         );
     }
 
-    // REST API
+    // -----------------------------------------------------------------------
+    // PUT /transactions/{id}
+    // -----------------------------------------------------------------------
 
     @Test
-    public void create_shouldReturnCreatedStatusAndOkBody_whenTransactionIsValid() throws Exception {
-        String jsonBody = """
-                {
-                    "amount": 4000,
-                    "type": "insurance",
-                    "parent_id": 1
-                }""";
-
-        String jsonResponse = """
-                {
-                    "status": "ok"
-                }""";
-
-        Transaction expectedTransaction = new Transaction(4, 4000, "insurance", 1L);
-        when(transactionService.create(Mockito.any(Transaction.class))).thenReturn(expectedTransaction);
+    public void create_shouldReturn201AndOkBody_whenTransactionIsValid() throws Exception {
+        Transaction expected = new Transaction(4, 4000, "insurance", 1L);
+        when(transactionService.create(any(Transaction.class))).thenReturn(expected);
 
         mockMvc.perform(put("/transactions/4")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody)
-                )
+                        .content("""
+                                { "amount": 4000, "type": "insurance", "parent_id": 1 }
+                                """))
                 .andExpect(status().isCreated())
-                .andExpect(content().json(jsonResponse));
+                .andExpect(content().json("""
+                        { "status": "ok" }
+                        """));
     }
 
     @Test
-    public void create_shouldReturnBadRequest_whenTransactionIdIsAlreadyInUse() throws Exception {
-        String jsonBody = """
-                {
-                    "amount": 4000,
-                    "type": "insurance",
-                    "parent_id": 1
-                }""";
-        when(transactionService.create(Mockito.any(Transaction.class))).thenThrow(new IllegalArgumentException());
+    public void create_shouldReturn400_whenTransactionIdIsAlreadyInUse() throws Exception {
+        when(transactionService.create(any())).thenThrow(new IllegalArgumentException("Transaction id already exists: 1"));
+
         mockMvc.perform(put("/transactions/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonBody)
-        ).andExpect(status().isBadRequest());
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 4000, "type": "insurance" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
     @Test
-    public void create_shouldReturnNotFound_whenTransactionIdIsNotNumeric() throws Exception {
-        String jsonBody = """
-                {
-                    "amount": 4000,
-                    "type": "insurance",
-                    "parent_id": 1
-                }""";
-
+    public void create_shouldReturn404_whenTransactionIdIsNotNumeric() throws Exception {
         mockMvc.perform(put("/transactions/car")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonBody)
-        ).andExpect(status().isNotFound());
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 4000, "type": "insurance" }
+                                """))
+                .andExpect(status().isNotFound());
 
         verifyNoInteractions(transactionService);
     }
 
     @Test
-    public void create_shouldReturnBadRequest_whenRequestBodyIsInvalid() throws Exception {
-        String jsonBody = """
-                {
-                    "type": "insurance",
-                    "parent_id": 1
-                }""";
+    public void create_shouldReturn400_whenAmountIsMissing() throws Exception {
+        // amount defaults to 0.0 when omitted, which violates @Positive
         mockMvc.perform(put("/transactions/4")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonBody)
-                )
+                        .content("""
+                                { "type": "insurance" }
+                                """))
                 .andExpect(status().isBadRequest());
+
         verifyNoInteractions(transactionService);
     }
 
     @Test
-    public void findByType_shouldReturnTransactionIds_whenTypeIsCar() throws Exception {
-        String jsonResponse = """
-                [
-                    1
-                ]""";
+    public void create_shouldReturn400_whenAmountIsNegative() throws Exception {
+        mockMvc.perform(put("/transactions/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": -100, "type": "insurance" }
+                                """))
+                .andExpect(status().isBadRequest());
 
-        List<Long> expectedIds = List.of(1L);
-        when(transactionService.findByType("car")).thenReturn(expectedIds);
+        verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    public void create_shouldReturn400_whenTypeIsBlank() throws Exception {
+        mockMvc.perform(put("/transactions/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": 100, "type": "" }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(transactionService);
+    }
+
+    // -----------------------------------------------------------------------
+    // GET /transactions/types/{type}
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void findByType_shouldReturnIds_whenTypeIsCar() throws Exception {
+        when(transactionService.findByType("car")).thenReturn(List.of(1L));
+
         mockMvc.perform(get("/transactions/types/car"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+                .andExpect(content().json("[1]"));
     }
 
     @Test
-    public void findByType_shouldReturnTransactionIds_whenTypeIsShopping() throws Exception {
-        String jsonResponse = """
-                [
-                    2,
-                    3
-                ]""";
-
-        List<Long> expectedIds = List.of(2L, 3L);
-        when(transactionService.findByType("shopping")).thenReturn(expectedIds);
+    public void findByType_shouldReturnMultipleIds_whenTypeIsShopping() throws Exception {
+        when(transactionService.findByType("shopping")).thenReturn(List.of(2L, 3L));
 
         mockMvc.perform(get("/transactions/types/shopping"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+                .andExpect(content().json("[2, 3]"));
     }
 
     @Test
     public void findByType_shouldReturnEmptyList_whenTypeDoesNotExist() throws Exception {
-        String jsonResponse = "[]";
+        when(transactionService.findByType("insurance")).thenReturn(List.of());
+
         mockMvc.perform(get("/transactions/types/insurance"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+                .andExpect(content().json("[]"));
     }
 
+    // -----------------------------------------------------------------------
+    // GET /transactions/sum/{id}
+    // -----------------------------------------------------------------------
+
     @Test
-    public void sum_shouldReturnAggregatedSum_whenTransactionHasChildrenAndIdIs1() throws Exception {
-        String jsonResponse = """
-                {
-                  sum: 20000
-                }
-                """;
+    public void sum_shouldReturnAggregatedSum_whenIdIs1() throws Exception {
         when(transactionService.sum(1)).thenReturn(20000.0);
+
         mockMvc.perform(get("/transactions/sum/1"))
                 .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+                .andExpect(content().json("""
+                        { "sum": 20000 }
+                        """));
     }
 
     @Test
-    public void sum_shouldReturnAggregatedSum_whenTransactionHasChildrenAndIdIs2() throws Exception {
-        String jsonResponse = """
-                {
-                    sum: 15000
-                }
-                """;
-        when(transactionService.sum(2)).thenReturn(15000.0);
-        mockMvc.perform(get("/transactions/sum/2"))
-                .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
-    }
+    public void sum_shouldReturn404_whenTransactionDoesNotExist() throws Exception {
+        when(transactionService.sum(99)).thenThrow(new TransactionNotFoundException(99));
 
-    @Test
-    public void sum_shouldReturnZero_whenTransactionDoesNotExist() throws Exception {
-        String jsonResponse = """
-                {
-                    sum: 0
-                }
-                """;
-        when(transactionService.sum(4)).thenReturn(0.0);
-        mockMvc.perform(get("/transactions/sum/4"))
-                .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+        mockMvc.perform(get("/transactions/sum/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 }
