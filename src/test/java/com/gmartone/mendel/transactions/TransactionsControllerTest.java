@@ -178,4 +178,17 @@ public class TransactionsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
     }
+
+    @Test
+    public void shouldReturn0ForTotalSumWhenIdDoesNotExist() throws Exception {
+        String jsonResponse = """
+                {
+                    sum: 0
+                }
+                """;
+        when(transactionService.sum(4)).thenReturn(0.0);
+        mockMvc.perform(get("/transactions/sum/4"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
+    }
 }
