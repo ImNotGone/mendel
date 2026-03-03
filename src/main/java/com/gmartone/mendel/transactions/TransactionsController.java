@@ -1,11 +1,12 @@
 package com.gmartone.mendel.transactions;
 
-import com.gmartone.mendel.transactions.dto.CreateTransactionRequest;
-import com.gmartone.mendel.transactions.dto.CreateTransactionResponse;
-import com.gmartone.mendel.transactions.dto.SumResponse;
-import com.gmartone.mendel.transactions.dto.Transaction;
+import com.gmartone.mendel.transactions.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,11 +32,26 @@ public class TransactionsController {
             description = "Creates a transaction with the specified id. If parent_id is provided, it must exist."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Transaction successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid request or id already in use")
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Transaction successfully created",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateTransactionResponse.class)
+                    )
+
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request or id already in use",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
     })
     @PutMapping("/{id:\\d+}")
-    public ResponseEntity<CreateTransactionResponse> createTransaction(
+    public ResponseEntity<?> createTransaction(
             @Parameter(description = "Transaction id", example = "4", required = true)
             @PathVariable long id,
 
@@ -60,7 +76,9 @@ public class TransactionsController {
                     .body(new CreateTransactionResponse("ok"));
 
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity
+                    .badRequest()
+                    .body(new ErrorResponse(e.getMessage()));
         }
     }
 
@@ -69,7 +87,22 @@ public class TransactionsController {
             description = "Returns a list of transaction ids that match the provided type"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Transactions retrieved successfully")
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Transactions retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            array = @ArraySchema(
+                                    schema = @Schema(
+                                            type = "integer",
+                                            example = "1"
+                                    )
+                            ),
+                            examples = @ExampleObject(
+                                    value = "[1, 2]"
+                            )
+                    )
+            )
     })
     @GetMapping("/types/{type}")
     public ResponseEntity<List<Long>> findByType(
