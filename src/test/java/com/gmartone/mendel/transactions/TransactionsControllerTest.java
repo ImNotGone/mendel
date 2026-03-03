@@ -1,18 +1,22 @@
 package com.gmartone.mendel.transactions;
 
+import com.gmartone.mendel.transactions.dto.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.ArrayList;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -22,6 +26,9 @@ public class TransactionsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private TransactionsService transactionService;
 
     List<Transaction> transactions = new ArrayList<>();
 
@@ -52,7 +59,11 @@ public class TransactionsControllerTest {
                     "type": "insurance",
                     "parent_id": 1
                 }""";
-        mockMvc.perform(post("/transactions/4")
+
+        Transaction expectedTransaction = new Transaction(4, 4000, "insurance", 1L);
+        when(transactionService.create(Mockito.any(Transaction.class))).thenReturn(expectedTransaction);
+
+        mockMvc.perform(put("/transactions/4")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody)
                 )
@@ -62,17 +73,34 @@ public class TransactionsControllerTest {
 
     @Test
     public void shouldFailCreateTransactionWhenIdIsInUse() throws Exception {
-        mockMvc.perform(post("/transactions/1")).andExpect(status().isBadRequest());
+        String jsonBody = """
+                {
+                    "amount": 4000,
+                    "type": "insurance",
+                    "parent_id": 1
+                }""";
+        when(transactionService.create(Mockito.any(Transaction.class))).thenThrow(new IllegalArgumentException());
+        mockMvc.perform(put("/transactions/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        ).andExpect(status().isBadRequest());
     }
 
     @Test
     public void shouldFailCreateTransactionWhenIdIsNan() throws Exception {
-        mockMvc.perform(post("/transactions/car")).andExpect(status().isBadRequest());
-    }
+        String jsonBody = """
+                {
+                    "amount": 4000,
+                    "type": "insurance",
+                    "parent_id": 1
+                }""";
 
-    @Test
-    public void shouldFailCreateTransactionWhenIdIsNull() throws Exception {
-        mockMvc.perform(post("/transactions/")).andExpect(status().isBadRequest());
+        mockMvc.perform(put("/transactions/car")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody)
+        ).andExpect(status().isNotFound());
+
+        verifyNoInteractions(transactionService);
     }
 
     @Test
@@ -82,11 +110,12 @@ public class TransactionsControllerTest {
                     "type": "insurance",
                     "parent_id": 1
                 }""";
-        mockMvc.perform(post("/transactions/4")
+        mockMvc.perform(put("/transactions/4")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonBody)
                 )
                 .andExpect(status().isBadRequest());
+        verifyNoInteractions(transactionService);
     }
 
     @Test
@@ -124,7 +153,11 @@ public class TransactionsControllerTest {
 
     @Test
     public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor1() throws Exception {
-        String jsonResponse = "{sum: 20000}";
+        String jsonResponse = """
+                {
+                  sum: 20000
+                }
+                """;
         mockMvc.perform(get("/transactions/sum/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));

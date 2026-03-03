@@ -1,0 +1,15 @@
+package com.gmartone.mendel.transactions.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema( description = "A transactions create request body")
+public record CreateTransactionRequest(
+        @Schema(description = "The amount spent in the transaction")
+        double amount,
+
+        @Schema(description = "The transactions type")
+        String type,
+
+        @Schema(description = "The transactions parent transaction id")
+        Long parent_id
+) { }
