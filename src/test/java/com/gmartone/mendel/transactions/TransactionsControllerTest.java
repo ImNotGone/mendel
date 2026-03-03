@@ -54,10 +54,7 @@ public class TransactionsControllerTest {
 
         String jsonResponse = """
                 {
-                    "id": 4,
-                    "amount": 4000,
-                    "type": "insurance",
-                    "parent_id": 1
+                    "status": "ok"
                 }""";
 
         Transaction expectedTransaction = new Transaction(4, 4000, "insurance", 1L);

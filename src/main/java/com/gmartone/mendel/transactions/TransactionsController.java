@@ -1,6 +1,7 @@
 package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.CreateTransactionRequest;
+import com.gmartone.mendel.transactions.dto.CreateTransactionResponse;
 import com.gmartone.mendel.transactions.dto.Transaction;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,7 @@ public class TransactionsController {
     }
 
     @PutMapping("/{id:\\d+}")
-    public ResponseEntity<Transaction> createTransaction(
+    public ResponseEntity<CreateTransactionResponse> createTransaction(
             @PathVariable long id,
             @RequestBody CreateTransactionRequest request
     ) {
@@ -36,7 +37,7 @@ public class TransactionsController {
         try {
             Transaction created = transactionService.create(transaction);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(created);
+                    .body(new CreateTransactionResponse("ok"));
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
