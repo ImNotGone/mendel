@@ -3,6 +3,8 @@ package com.gmartone.mendel.transactions;
 import com.gmartone.mendel.transactions.dto.Transaction;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @Repository
@@ -18,8 +20,8 @@ public class TransactionsRepositoryImpl implements TransactionsRepository {
     }
 
     @Override
-    public int findByType(String type) {
-        return 0;
+    public List<Long> findByType(String type) {
+        return Collections.emptyList();
     }
 
     @Override

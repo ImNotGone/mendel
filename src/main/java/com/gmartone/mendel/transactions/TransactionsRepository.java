@@ -3,6 +3,7 @@ package com.gmartone.mendel.transactions;
 
 import com.gmartone.mendel.transactions.dto.Transaction;
 
+import java.util.List;
 import java.util.Set;
 
 public interface TransactionsRepository {
@@ -11,7 +12,7 @@ public interface TransactionsRepository {
 
     Transaction create(Transaction transaction);
 
-    int findByType(String type);
+    List<Long> findByType(String type);
 
     Set<Long> findChildren(long id);
 }

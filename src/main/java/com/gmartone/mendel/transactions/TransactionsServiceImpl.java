@@ -18,6 +18,10 @@ public class TransactionsServiceImpl implements TransactionsService {
     @Override
     public Transaction create(Transaction transaction) {
 
+        if(transaction.type() == null) {
+            throw new IllegalArgumentException("Transaction type is required");
+        }
+
         if (repository.findById(transaction.id()) != null) {
             throw new IllegalArgumentException("ID already exists");
         }
@@ -32,7 +36,10 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     public List<Long> findByType(String type) {
-        return new ArrayList<>(repository.findByType(type));
+        if(type == null) {
+            throw new IllegalArgumentException("Type is required");
+        }
+        return repository.findByType(type);
     }
 
     @Override
