@@ -124,7 +124,7 @@ public class TransactionsControllerTest {
 
         List<Long> expectedIds = List.of(1L);
         when(transactionService.findByType("car")).thenReturn(expectedIds);
-        mockMvc.perform(get("/transactions/type/car"))
+        mockMvc.perform(get("/transactions/types/car"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
     }
@@ -140,7 +140,7 @@ public class TransactionsControllerTest {
         List<Long> expectedIds = List.of(2L, 3L);
         when(transactionService.findByType("shopping")).thenReturn(expectedIds);
 
-        mockMvc.perform(get("/transactions/type/shopping"))
+        mockMvc.perform(get("/transactions/types/shopping"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
     }
@@ -148,7 +148,7 @@ public class TransactionsControllerTest {
     @Test
     public void shouldRetrieveEmptyTransactionsListForTypeInsurance() throws Exception {
         String jsonResponse = "[]";
-        mockMvc.perform(get("/transactions/type/insurance"))
+        mockMvc.perform(get("/transactions/types/insurance"))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonResponse));
     }

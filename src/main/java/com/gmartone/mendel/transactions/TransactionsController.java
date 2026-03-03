@@ -44,7 +44,7 @@ public class TransactionsController {
         }
     }
 
-    @GetMapping("/type/{type}")
+    @GetMapping("/types/{type}")
     public ResponseEntity<List<Long>> findByType(@PathVariable String type) {
         return ResponseEntity.ok(transactionService.findByType(type));
     }
