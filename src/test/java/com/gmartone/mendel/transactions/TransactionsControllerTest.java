@@ -44,7 +44,7 @@ public class TransactionsControllerTest {
     // REST API
 
     @Test
-    public void shouldCreateTransaction() throws Exception {
+    public void create_shouldReturnCreatedStatusAndOkBody_whenTransactionIsValid() throws Exception {
         String jsonBody = """
                 {
                     "amount": 4000,
@@ -69,7 +69,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldFailCreateTransactionWhenIdIsInUse() throws Exception {
+    public void create_shouldReturnBadRequest_whenTransactionIdIsAlreadyInUse() throws Exception {
         String jsonBody = """
                 {
                     "amount": 4000,
@@ -84,7 +84,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldFailCreateTransactionWhenIdIsNan() throws Exception {
+    public void create_shouldReturnNotFound_whenTransactionIdIsNotNumeric() throws Exception {
         String jsonBody = """
                 {
                     "amount": 4000,
@@ -101,7 +101,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldFailCreateTransactionWhenBodyIsInvalid() throws Exception {
+    public void create_shouldReturnBadRequest_whenRequestBodyIsInvalid() throws Exception {
         String jsonBody = """
                 {
                     "type": "insurance",
@@ -116,7 +116,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldRetrieveTransactionsListForTypeCar() throws Exception {
+    public void findByType_shouldReturnTransactionIds_whenTypeIsCar() throws Exception {
         String jsonResponse = """
                 [
                     1
@@ -130,7 +130,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldRetrieveTransactionsListForTypeShopping() throws Exception {
+    public void findByType_shouldReturnTransactionIds_whenTypeIsShopping() throws Exception {
         String jsonResponse = """
                 [
                     2,
@@ -146,7 +146,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldRetrieveEmptyTransactionsListForTypeInsurance() throws Exception {
+    public void findByType_shouldReturnEmptyList_whenTypeDoesNotExist() throws Exception {
         String jsonResponse = "[]";
         mockMvc.perform(get("/transactions/types/insurance"))
                 .andExpect(status().isOk())
@@ -154,7 +154,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor1() throws Exception {
+    public void sum_shouldReturnAggregatedSum_whenTransactionHasChildrenAndIdIs1() throws Exception {
         String jsonResponse = """
                 {
                   sum: 20000
@@ -167,7 +167,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldGetTotalSumOfTransactionsFollowingTheChildrenFor2() throws Exception {
+    public void sum_shouldReturnAggregatedSum_whenTransactionHasChildrenAndIdIs2() throws Exception {
         String jsonResponse = """
                 {
                     sum: 15000
@@ -180,7 +180,7 @@ public class TransactionsControllerTest {
     }
 
     @Test
-    public void shouldReturn0ForTotalSumWhenIdDoesNotExist() throws Exception {
+    public void sum_shouldReturnZero_whenTransactionDoesNotExist() throws Exception {
         String jsonResponse = """
                 {
                     sum: 0
